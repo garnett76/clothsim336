@@ -142,7 +142,8 @@
       this[globalName] = mainExports;
     }
   }
-})({"ciGIJ":[function(require,module,exports) {
+})
+({"ciGIJ":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
@@ -623,6 +624,7 @@ var dist = clothSize / x_particles;
 var particles = [];
 let particle_mass;
 for(let i = 0; i < x_particles + 1; i++){
+    mass = 1;
     particles.push([]);
     for(let j = 0; j < y_particles + 1; j++){
         //if particle is at the top of the cloth, set particle_mass to 0
@@ -633,14 +635,16 @@ for(let i = 0; i < x_particles + 1; i++){
             mass: particle_mass,
             shape: new _cannonEs.Particle(),
             position: new _cannonEs.Vec3((i - x_particles * 0.5) * dist, (j - y_particles * 0.5) * dist, 0),
-            velocity: new _cannonEs.Vec3(0, 0, -0.1 * (y_particles - j))
+            velocity: new _cannonEs.Vec3(0, 0, 0)//-0.1 * (y_particles - j))
         });
         //console.log(particle.mass)
         //push to particle subarray
         particles[i].push(particle);
         //add particle to world
         world.addBody(particle);
+         // mass += mass/2 ;
     }
+    // mass++;
 }
 //connect the particles
 function connect_particles(i1, j1, i2, j2) {
@@ -658,42 +662,142 @@ var clothMat = new _three.MeshBasicMaterial({
 });
 var clothMesh = new _three.Mesh(clothGeometry, clothMat);
 scene.add(clothMesh);
+
+//Adding the ("fan")
+var sphereGeometry = new _three.SphereGeometry(.1, 30, 30);
+var sphereMath = new _three.MeshBasicMaterial({
+    side: _three.DoubleSide,
+    map: new _three.TextureLoader().load("./isu.jpg")
+});
+var sphereMesh = new _three.Mesh(sphereGeometry, sphereMath);
+sphereMesh.position.set(0,0,1);
+sphereMesh.scale.set(1, 4, .1);
+scene.add(sphereMesh);
+
 //align particles with cloth vertices
 function updateParticles() {
-    for(let i = 0; i < x_particles + 1; i++)for(let j = 0; j < y_particles + 1; j++){
-        var index = j * (x_particles + 1) + i;
-        //x,y,z of each vertices in the cloth
-        var positionAttribute = clothGeometry.attributes.position;
-        var clothX = clothGeometry.attributes.x;
-        var clothY = clothGeometry.attributes.y;
-        var clothZ = clothGeometry.attributes.z;
-        //position of the particle
-        var particleX = particles[i][y_particles - j].position.x;
-        var particleY = particles[i][y_particles - j].position.y;
-        var particleZ = particles[i][y_particles - j].position.z;
-        console.log(particleX + ", " + particleY + ", " + particleZ);
-        //set cloth vertice x, y, z equal to cannon particle x, y, z
-        positionAttribute.setXYZ(index, particleX, particleY, particleZ);
-        //update cloth vertice position
-        positionAttribute.needsUpdate = true;
+    for(let i = 0; i < x_particles + 1; i++) {
+        for(let j = 0; j < y_particles + 1; j++){
+            var index = j * (x_particles + 1) + i;
+            //x,y,z of each vertices in the cloth
+            var positionAttribute = clothGeometry.attributes.position;
+            var clothX = clothGeometry.attributes.x;
+            var clothY = clothGeometry.attributes.y;
+            var clothZ = clothGeometry.attributes.z;
+            //position of the particle
+            var particleX = particles[i][y_particles - j].position.x;
+            var particleY = particles[i][y_particles - j].position.y;
+            var particleZ = particles[i][y_particles - j].position.z;
+            // console.log(particleX + ", " + particleY + ", " + particleZ);
+            //set cloth vertice x, y, z equal to cannon particle x, y, z
+            positionAttribute.setXYZ(index, particleX, particleY, particleZ);
+            //update cloth vertice position
+            positionAttribute.needsUpdate = true;
+        }
+    }
+}
+//Update the force made on the particles (maybe we should define it as force instead)
+function updateWind(force) {
+    for(let i = 0; i < x_particles + 1; i++) {
+        for(let j = 0; j < y_particles + 1; j++) {
+            var particleX = particles[i][j].position.x;
+            var particleY = particles[i][j].position.y;
+            var particleZ = particles[i][j].position.z;
+
+            var sphereX = sphereMesh.position.x;
+            var sphereY = sphereMesh.position.y;
+            var sphereZ = sphereMesh.position.z;
+
+            var distToSphere = Math.sqrt(Math.pow((particleX - sphereX), 2) +
+                Math.pow((particleY - sphereY), 2) +
+                Math.pow((particleZ - sphereZ), 2));
+
+            var distX = -force * (sphereX - particleX);
+            var distY = -force * (sphereY - particleY);
+            var distZ = -force * (sphereZ - particleZ);
+
+            //I realized that this is just the vector of the angles formed by the components
+            //of the vector from the sphere to the cloth
+            var forceP = new _cannonEs.Vec3(distX/distToSphere,
+                                                 distY/distToSphere,
+                                                 distZ/distToSphere);
+            particles[i][j].applyForce(forceP);
+
+            // var velocityP = new _cannonEs.Vec3(0, 0, .1)
+
+
+             // if(particles[i][j].velocity.z > 0) {
+             //     particles[i][j].velocity.z = -0.1 / distToSphere;
+             // }else{
+             //     particles[i][j].velocity.z = 0.001 / distToSphere;
+             // }
+        }
     }
 }
 /**
  * 
  * start boiler plate
  * 
-**/ var timeStep = 1 / 60;
+**/
+var timeStep = 1/60;
+var angle = 0;
+var power = 1;
+var width = 1;
 function animate(time) {
+    //Make the rotation and update everything
+    updateWind(power);
     updateParticles();
+    sphereMesh.rotation.z = power * 10 * angle * (Math.PI/180);
     world.step(timeStep);
     renderer.render(scene, camera);
+    angle++;
 }
 renderer.setAnimationLoop(animate);
 window.addEventListener("resize", function() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-}); /**
+});
+
+document.addEventListener('keypress', (event) => {
+    var name = event.key;
+    var code = event.code;
+
+    console.log(name, code);
+    switch(name){
+        //orbit
+        case 'a':
+            break;
+        case 'd':
+            break;
+        case 'w':
+            break;
+        case 's':
+            break;
+            // Move left, right, up, down
+        case 'j':
+            sphereMesh.position.x -= 0.05;
+            break;
+        case 'l':
+            sphereMesh.position.x += 0.05;
+            break;
+        case 'i':
+            sphereMesh.position.z -= 0.05;
+            break;
+        case 'k':
+            sphereMesh.position.z += 0.05;
+            break;
+            //More power
+        case 'p':
+            power += 0.5;
+            break;
+        //less power
+        case 'P':
+            power -= 0.5;
+    }
+}, false);
+
+/**
  * 
  * end boiler plate
  * 
