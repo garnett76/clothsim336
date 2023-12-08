@@ -663,16 +663,56 @@ var clothMat = new _three.MeshBasicMaterial({
 var clothMesh = new _three.Mesh(clothGeometry, clothMat);
 scene.add(clothMesh);
 
-//Adding the ("fan")
-var sphereGeometry = new _three.SphereGeometry(.1, 30, 30);
-var sphereMath = new _three.MeshBasicMaterial({
-    side: _three.DoubleSide,
-    map: new _three.TextureLoader().load("./isu.jpg")
+
+var cylinderGeometry = new _three.CylinderGeometry(0.1, 0.1, 0.5, 20, 10, false);
+var cylinderMat = new _three.MeshBasicMaterial({
+    color: 0xcfcfcf
 });
-var sphereMesh = new _three.Mesh(sphereGeometry, sphereMath);
-sphereMesh.position.set(0,0,1);
-sphereMesh.scale.set(1, 4, .1);
-scene.add(sphereMesh);
+var cylinderMesh = new _three.Mesh(cylinderGeometry, cylinderMat);
+cylinderMesh.scale.set(0.5, 1, 0.5);
+cylinderMesh.position.set(0,0,1);
+
+var rotorGeometry = new _three.CylinderGeometry(0.1, 0.1, 0.4, 20, 10, false);
+var rotorMat = new _three.MeshBasicMaterial({
+    color: 0x9e9782
+});
+var rotorMesh = new _three.Mesh(rotorGeometry, rotorMat);
+rotorMesh.scale.set(0.5, 1, 1);
+rotorMesh.rotation.z = Math.PI / 2;
+rotorMesh.rotation.y = -Math.PI / 2;
+rotorMesh.position.set(0, 0.3, 0);
+
+cylinderMesh.add(rotorMesh);
+
+var pivot = new _three.Object3D();
+pivot.position.set(0,0,0);
+rotorMesh.add(pivot);
+var blade1Geometry = new _three.SphereGeometry(0.075, 30, 30);
+var blade1Mat = new _three.MeshBasicMaterial({
+    color: 0x5b804f
+});
+var blade1 = new _three.Mesh(blade1Geometry, blade1Mat);
+blade1.position.set(0, 0.2, 0.525);
+blade1.scale.set(1, 0.05, 6);
+pivot.add(blade1);
+
+var blade2 = new _three.Mesh(blade1Geometry, blade1Mat);
+blade2.position.set(0, 0.2, -0.525);
+blade2.scale.set(1, 0.05, 6);
+pivot.add(blade2);
+
+
+scene.add(cylinderMesh);
+// //Adding the ("fan")
+// var sphereGeometry = new _three.SphereGeometry(.1, 30, 30);
+// var sphereMath = new _three.MeshBasicMaterial({
+//     side: _three.DoubleSide,
+//     map: new _three.TextureLoader().load("./isu.jpg")
+// });
+// var sphereMesh = new _three.Mesh(sphereGeometry, sphereMath);
+// sphereMesh.position.set(0,0,1);
+// sphereMesh.scale.set(1, 4, .1);
+// scene.add(sphereMesh);
 
 //align particles with cloth vertices
 function updateParticles() {
@@ -704,23 +744,23 @@ function updateWind(force) {
             var particleY = particles[i][j].position.y;
             var particleZ = particles[i][j].position.z;
 
-            var sphereX = sphereMesh.position.x;
-            var sphereY = sphereMesh.position.y;
-            var sphereZ = sphereMesh.position.z;
+            var rotorX = cylinderMesh.position.x;
+            var rotorY = cylinderMesh.position.y;
+            var rotorZ = cylinderMesh.position.z;
 
-            var distToSphere = Math.sqrt(Math.pow((particleX - sphereX), 2) +
-                Math.pow((particleY - sphereY), 2) +
-                Math.pow((particleZ - sphereZ), 2));
+            var distToRotor = Math.sqrt(Math.pow((particleX - rotorX), 2) +
+                Math.pow((particleY - rotorY), 2) +
+                Math.pow((particleZ - rotorZ), 2));
 
-            var distX = -force * (sphereX - particleX);
-            var distY = -force * (sphereY - particleY);
-            var distZ = -force * (sphereZ - particleZ);
+            var distX = -force * (rotorX - particleX);
+            var distY = -force * (rotorY - particleY);
+            var distZ = -force * (rotorZ - particleZ);
 
             //I realized that this is just the vector of the angles formed by the components
             //of the vector from the sphere to the cloth
-            var forceP = new _cannonEs.Vec3(distX/distToSphere,
-                                                 distY/distToSphere,
-                                                 distZ/distToSphere);
+            var forceP = new _cannonEs.Vec3(distX/distToRotor,
+                                                 distY/distToRotor,
+                                                 distZ/distToRotor);
             particles[i][j].applyForce(forceP);
 
             // var velocityP = new _cannonEs.Vec3(0, 0, .1)
@@ -747,7 +787,7 @@ function animate(time) {
     //Make the rotation and update everything
     updateWind(power);
     updateParticles();
-    sphereMesh.rotation.z = power * 10 * angle * (Math.PI/180);
+    pivot.rotation.y = power * 10 * angle * (Math.PI/180);
     world.step(timeStep);
     renderer.render(scene, camera);
     angle++;
@@ -776,16 +816,16 @@ document.addEventListener('keypress', (event) => {
             break;
             // Move left, right, up, down
         case 'j':
-            sphereMesh.position.x -= 0.05;
+            cylinderMesh.position.x -= 0.05;
             break;
         case 'l':
-            sphereMesh.position.x += 0.05;
+            cylinderMesh.position.x += 0.05;
             break;
         case 'i':
-            sphereMesh.position.z -= 0.05;
+            cylinderMesh.position.z -= 0.05;
             break;
         case 'k':
-            sphereMesh.position.z += 0.05;
+            cylinderMesh.position.z += 0.05;
             break;
             //More power
         case 'p':
