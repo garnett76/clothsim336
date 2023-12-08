@@ -758,9 +758,36 @@ function updateWind(force) {
 
             //I realized that this is just the vector of the angles formed by the components
             //of the vector from the sphere to the cloth
-            var forceP = new _cannonEs.Vec3(distX/distToRotor,
-                                                 distY/distToRotor,
-                                                 distZ/distToRotor);
+            // var forceP = new _cannonEs.Vec3(distX/distToRotor,
+            //                                      distY/distToRotor,
+            //                                      distZ/distToRotor);
+
+            var forceX = 1/distX;
+            var forceY = 1/distY;
+            var forceZ = 10/distZ;
+
+            if(forceX < 0){
+                forceX = Math.max(-3, forceX);
+            }
+            else{
+                forceX = Math.min(3, forceX);
+            }
+
+            if(forceY < 0){
+                forceY = Math.max(-3, forceY);
+            }
+            else{
+                forceY = Math.min(3, forceY);
+            }
+
+            if(forceZ < 0){
+                forceZ = Math.max(-30, forceZ);
+            }
+            else{
+                forceZ = Math.min(30, forceZ);
+            }
+
+            var forceP = new _cannonEs.Vec3(forceX, forceY, forceZ );
             particles[i][j].applyForce(forceP);
 
             // var velocityP = new _cannonEs.Vec3(0, 0, .1)
