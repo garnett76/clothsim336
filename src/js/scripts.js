@@ -220,19 +220,19 @@ sphereMesh.position.copy(sphereBody.position)
 
 //Turbine code (ends at 261)
 
-var cylinderGeometry = new _three.CylinderGeometry(0.1, 0.1, 0.5, 20, 10, false);
-var cylinderMat = new _three.MeshBasicMaterial({
+var cylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 20, 10, false);
+var cylinderMat = new THREE.MeshBasicMaterial({
     color: 0xcfcfcf
 });
-var cylinderMesh = new _three.Mesh(cylinderGeometry, cylinderMat);
+var cylinderMesh = new THREE.Mesh(cylinderGeometry, cylinderMat);
 cylinderMesh.scale.set(0.5, 1, 0.5);
 cylinderMesh.position.set(0,0,1);
 
-var rotorGeometry = new _three.CylinderGeometry(0.1, 0.1, 0.4, 20, 10, false);
-var rotorMat = new _three.MeshBasicMaterial({
+var rotorGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.4, 20, 10, false);
+var rotorMat = new THREE.MeshBasicMaterial({
     color: 0x9e9782
 });
-var rotorMesh = new _three.Mesh(rotorGeometry, rotorMat);
+var rotorMesh = new THREE.Mesh(rotorGeometry, rotorMat);
 rotorMesh.scale.set(0.5, 1, 1);
 rotorMesh.rotation.z = Math.PI / 2;
 rotorMesh.rotation.y = -Math.PI / 2;
@@ -240,19 +240,19 @@ rotorMesh.position.set(0, 0.3, 0);
 
 cylinderMesh.add(rotorMesh);
 
-var pivot = new _three.Object3D();
+var pivot = new THREE.Object3D();
 pivot.position.set(0,0,0);
 rotorMesh.add(pivot);
-var blade1Geometry = new _three.SphereGeometry(0.075, 30, 30);
-var blade1Mat = new _three.MeshBasicMaterial({
+var blade1Geometry = new THREE.SphereGeometry(0.075, 30, 30);
+var blade1Mat = new THREE.MeshBasicMaterial({
     color: 0x5b804f
 });
-var blade1 = new _three.Mesh(blade1Geometry, blade1Mat);
+var blade1 = new THREE.Mesh(blade1Geometry, blade1Mat);
 blade1.position.set(0, 0.2, 0.525);
 blade1.scale.set(1, 0.05, 6);
 pivot.add(blade1);
 
-var blade2 = new _three.Mesh(blade1Geometry, blade1Mat);
+var blade2 = new THREE.Mesh(blade1Geometry, blade1Mat);
 blade2.position.set(0, 0.2, -0.525);
 blade2.scale.set(1, 0.05, 6);
 pivot.add(blade2);
@@ -367,7 +367,7 @@ function updateWind(force) {
                 forceZ = Math.min(30, forceZ);
             }
 
-            var forceP = new _cannonEs.Vec3(forceX, forceY, forceZ );
+            var forceP = new CANNON.Vec3(forceX, forceY, forceZ );
             particles[i][j].applyForce(forceP);
 
             // var velocityP = new _cannonEs.Vec3(0, 0, .1)
@@ -396,13 +396,15 @@ var sphereMovementX = false
 // Power and angle declaration
 
 var power = 1, angle = 0;
-
+let wind = false;
 function animate(time) {
     window.onkeypress = handleKeyPress;
     update();
 
     //updating wind and turbine
-    updateWind(power);
+    if(wind == true){
+        updateWind(power);
+    }
     pivot.rotation.y = power * 10 * (angle++) * (Math.PI/180);
 
     world.step(timeStep);
@@ -524,13 +526,18 @@ function handleKeyPress(event)
         case 'k':
             cylinderMesh.position.z += 0.05;
             break;
-        //More power
+        //decrease power
         case 'p':
             power += 0.5;
             break;
-        //less power
+        //more power
         case 'P':
             power -= 0.5;
+            break;
+        case 'w':
+            wind = !wind;
+            break;
+
 		default:
 			return;
 	}

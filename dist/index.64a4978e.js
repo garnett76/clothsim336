@@ -728,6 +728,41 @@ sphereBody = new _cannonEs.Body({
 sphereBody.position.set(0, 0, -0.5);
 world.addBody(sphereBody);
 sphereMesh.position.copy(sphereBody.position);
+//Turbine code (ends at 261)
+var cylinderGeometry = new _three.CylinderGeometry(0.1, 0.1, 0.5, 20, 10, false);
+var cylinderMat = new _three.MeshBasicMaterial({
+    color: 0xcfcfcf
+});
+var cylinderMesh = new _three.Mesh(cylinderGeometry, cylinderMat);
+cylinderMesh.scale.set(0.5, 1, 0.5);
+cylinderMesh.position.set(0, 0, 1);
+var rotorGeometry = new _three.CylinderGeometry(0.1, 0.1, 0.4, 20, 10, false);
+var rotorMat = new _three.MeshBasicMaterial({
+    color: 0x9e9782
+});
+var rotorMesh = new _three.Mesh(rotorGeometry, rotorMat);
+rotorMesh.scale.set(0.5, 1, 1);
+rotorMesh.rotation.z = Math.PI / 2;
+rotorMesh.rotation.y = -Math.PI / 2;
+rotorMesh.position.set(0, 0.3, 0);
+cylinderMesh.add(rotorMesh);
+var pivot = new _three.Object3D();
+pivot.position.set(0, 0, 0);
+rotorMesh.add(pivot);
+var blade1Geometry = new _three.SphereGeometry(0.075, 30, 30);
+var blade1Mat = new _three.MeshBasicMaterial({
+    color: 0x5b804f
+});
+var blade1 = new _three.Mesh(blade1Geometry, blade1Mat);
+blade1.position.set(0, 0.2, 0.525);
+blade1.scale.set(1, 0.05, 6);
+pivot.add(blade1);
+var blade2 = new _three.Mesh(blade1Geometry, blade1Mat);
+blade2.position.set(0, 0.2, -0.525);
+blade2.scale.set(1, 0.05, 6);
+pivot.add(blade2);
+scene.add(cylinderMesh);
+//end of turbine
 //dude: https://poly.pizza/m/3wn-0Holuje
 const loader = new (0, _gltfloaderJs.GLTFLoader)();
 loader.load("./dude.glb", function(gltf) {
@@ -762,6 +797,43 @@ function update() {
         clothGeo.attributes.position.needsUpdate = true;
     }
 }
+// Wind update (ends at 383)
+function updateWind(force) {
+    for(let i = 0; i < x_particles + 1; i++)for(let j = 0; j < y_particles + 1; j++){
+        var particleX1 = particles[i][j].position.x;
+        var particleY1 = particles[i][j].position.y;
+        var particleZ1 = particles[i][j].position.z;
+        var rotorX = cylinderMesh.position.x;
+        var rotorY = cylinderMesh.position.y;
+        var rotorZ = cylinderMesh.position.z;
+        var distToRotor = Math.sqrt(Math.pow(particleX1 - rotorX, 2) + Math.pow(particleY1 - rotorY, 2) + Math.pow(particleZ1 - rotorZ, 2));
+        var distX = -force * (rotorX - particleX1);
+        var distY = -force * (rotorY - particleY1);
+        var distZ = -force * (rotorZ - particleZ1);
+        //I realized that this is just the vector of the angles formed by the components
+        //of the vector from the sphere to the cloth
+        // var forceP = new _cannonEs.Vec3(distX/distToRotor,
+        //                                      distY/distToRotor,
+        //                                      distZ/distToRotor);
+        var forceX = 1 / distX;
+        var forceY = 1 / distY;
+        var forceZ = 10 / distZ;
+        if (forceX < 0) forceX = Math.max(-3, forceX);
+        else forceX = Math.min(3, forceX);
+        if (forceY < 0) forceY = Math.max(-3, forceY);
+        else forceY = Math.min(3, forceY);
+        if (forceZ < 0) forceZ = Math.max(-30, forceZ);
+        else forceZ = Math.min(30, forceZ);
+        var forceP = new _cannonEs.Vec3(forceX, forceY, forceZ);
+        particles[i][j].applyForce(forceP);
+    // var velocityP = new _cannonEs.Vec3(0, 0, .1)
+    // if(particles[i][j].velocity.z > 0) {
+    //     particles[i][j].velocity.z = -0.1 / distToSphere;
+    // }else{
+    //     particles[i][j].velocity.z = 0.001 / distToSphere;
+    // }
+    }
+}
 /**
  * 
  * start boiler plate
@@ -771,9 +843,15 @@ function update() {
 // var init_run = false
 var sphereMovementZ = false;
 var sphereMovementX = false;
+// Power and angle declaration
+var power = 1, angle = 0;
+let wind = false;
 function animate(time) {
     window.onkeypress = handleKeyPress;
     update();
+    //updating wind and turbine
+    if (wind == true) updateWind(power);
+    pivot.rotation.y = power * 10 * angle++ * (Math.PI / 180);
     world.step(timeStep);
     renderer.render(scene, camera);
     if (sphereMovementZ == true) {
@@ -860,6 +938,30 @@ function handleKeyPress(event) {
                 scene.add(clothMesh);
                 current_cape = -1;
             }
+            break;
+        //Turbine controls
+        case "j":
+            cylinderMesh.position.x -= 0.05;
+            break;
+        case "l":
+            cylinderMesh.position.x += 0.05;
+            break;
+        case "i":
+            cylinderMesh.position.z -= 0.05;
+            break;
+        case "k":
+            cylinderMesh.position.z += 0.05;
+            break;
+        //decrease power
+        case "p":
+            power += 0.5;
+            break;
+        //more power
+        case "P":
+            power -= 0.5;
+            break;
+        case "w":
+            wind = !wind;
             break;
         default:
             return;
