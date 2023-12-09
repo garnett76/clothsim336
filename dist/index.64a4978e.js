@@ -761,6 +761,7 @@ var blade2 = new _three.Mesh(blade1Geometry, blade1Mat);
 blade2.position.set(0, 0.2, -0.525);
 blade2.scale.set(1, 0.05, 6);
 pivot.add(blade2);
+cylinderMesh.visible = false;
 scene.add(cylinderMesh);
 //end of turbine
 //dude: https://poly.pizza/m/3wn-0Holuje
@@ -963,6 +964,8 @@ function handleKeyPress(event) {
         case "w":
             wind = !wind;
             break;
+        case "t":
+            cylinderMesh.visible = !cylinderMesh.visible;
         default:
             return;
     }
