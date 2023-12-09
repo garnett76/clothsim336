@@ -617,9 +617,9 @@ var x_particles = 15;
 //number of particles on y axis
 var y_particles = 23;
 var mass = 0.05;
-var clothSize = 1;
 //stores linked particles
 var particles = [];
+var current_cape = 0;
 for(let i = 0; i < 16; i++)particles[i] = [];
 let particle_mass;
 for(let i = 0; i < x_particles + 1; i++)// console.log(i)
@@ -653,7 +653,7 @@ for(let i = 0; i < x_particles + 1; i++)for(let j = 0; j < y_particles + 1; j++)
 var clothGeo = new _three.PlaneGeometry(0, 0, x_particles, y_particles);
 var clothMat = new _three.MeshBasicMaterial({
     side: _three.DoubleSide,
-    color: "#BA1C1C" //red
+    color: "#BA1C1C" //red,
 });
 var clothMesh = new _three.Mesh(clothGeo, clothMat);
 clothMesh.visible = true;
@@ -750,7 +750,9 @@ loader.load("./dude.glb", function(gltf) {
 //align particles with cloth vertices
 function update() {
     for(let i = 0; i < x_particles + 1; i++)for(let j = 0; j < y_particles + 1; j++){
-        var index = j * (x_particles + 1) + i;
+        var a = j * (x_particles + 1);
+        var b = i;
+        var index = a + b;
         //position of the particle
         var particleX1 = particles[i][y_particles - j].position.x;
         var particleY1 = particles[i][y_particles - j].position.y;
@@ -775,7 +777,6 @@ function animate(time) {
     world.step(timeStep);
     renderer.render(scene, camera);
     if (sphereMovementZ == true) {
-        sphereBody.position.set(0, 0, 0.5);
         sphereMesh.visible = true;
         sphereBody.position.set(0, 0, 0.5 * Math.cos(time / 1000));
         sphereMesh.position.copy(sphereBody.position);
@@ -812,6 +813,7 @@ function handleKeyPress(event) {
         case "z":
             console.log("z");
             sphereMovementZ = !sphereMovementZ;
+            sphereMovementX = false;
             sphereMesh.visible = !sphereMesh.visible;
             break;
         case "c":
@@ -823,9 +825,41 @@ function handleKeyPress(event) {
         case "x":
             console.log("x");
             sphereMovementX = !sphereMovementX;
+            sphereMovementZ = false;
             sphereMesh.visible = !sphereMesh.visible;
             break;
-        case "o":
+        case "f":
+            console.log("f");
+            console.log(current_cape);
+            current_cape++;
+            if (current_cape == 0) {
+                scene.remove(clothMesh);
+                clothMat = new _three.MeshBasicMaterial({
+                    side: _three.DoubleSide,
+                    color: "#BA1C1C" //red,
+                });
+                clothMesh = new _three.Mesh(clothGeo, clothMat);
+                scene.add(clothMesh);
+            } else if (current_cape == 1) {
+                scene.remove(clothMesh);
+                clothMat = new _three.MeshBasicMaterial({
+                    side: _three.DoubleSide,
+                    //color: '#BA1C1C' //red,
+                    map: new _three.TextureLoader().load("./check64border.png")
+                });
+                clothMesh = new _three.Mesh(clothGeo, clothMat);
+                scene.add(clothMesh);
+            } else if (current_cape == 2) {
+                scene.remove(clothMesh);
+                clothMat = new _three.MeshBasicMaterial({
+                    side: _three.DoubleSide,
+                    //color: '#BA1C1C' //red,
+                    map: new _three.TextureLoader().load("./isu.jpg")
+                });
+                clothMesh = new _three.Mesh(clothGeo, clothMat);
+                scene.add(clothMesh);
+                current_cape = -1;
+            }
             break;
         default:
             return;
